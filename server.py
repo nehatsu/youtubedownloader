@@ -8,7 +8,6 @@ import logging
 app = Flask(__name__)
 
 
-# server.pyのディレクトリを基にダウンロードフォルダを設定
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOWNLOAD_FOLDER = os.path.join(BASE_DIR, 'downloads')
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
@@ -16,7 +15,7 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 logging.basicConfig(level=logging.DEBUG)
 
 def sanitize_filename(filename):
-    # Windowsでは次の文字はファイル名として無効です: < > : " / \ | ? *
+
     return re.sub(r'[<>:"/\\|?*]', '', filename)
 
 
@@ -35,7 +34,6 @@ def download():
         logging.debug(f"Downloading: {filename}")
 
         if format == "mp4":
-            # 最も高解像度のビデオストリームを取得
             video_stream = youtube.streams.filter(file_extension='mp4').get_highest_resolution()
             if video_stream is None:
                 return jsonify({'error': 'No suitable stream found!'}), 404
