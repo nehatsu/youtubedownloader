@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube動画ダウンロード</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+
+        form {
+            width: 50%;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        select {
+            width: calc(100% - 12px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        #message {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #message a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        #message a:hover {
+            text-decoration: underline;
+        }
+
+        .loading::after {
+            content: '生成中...';
+            animation: ellipsis 1s infinite steps(4);
+        }
+
+        @keyframes ellipsis {
+            0% { content: '生成中...'; }
+            25% { content: '生成中....'; }
+            50% { content: '生成中.....'; }
+            75% { content: '生成中......'; }
+            100% { content: '生成中...'; }
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube動画ダウンロード</h1>
+    <form id="download-form">
+        <label for="url">YouTube URL:</label>
+        <input type="text" id="url" name="url" required>
+        <br>
+        <label for="format">出力フォーマット:</label>
+        <select id="format" name="format" required>
+            <option value="mp3">mp3</option>
+            <option value="mp4">mp4</option>
+        </select>
+        <br>
+        <button type="submit">ダウンロード</button>
+    </form>
+    <div id="message"></div>
+
+    <script>
+        document.getElementById('download-form').onsubmit = async function(event) {
+            event.preventDefault();
+            const url = document.getElementById('url').value;
+            const format = document.getElementById('format').value;
+            const messageDiv = document.getElementById('message');
+
+            messageDiv.className = "loading";
+            messageDiv.innerHTML = "";
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url, format })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`サーバーエラー: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                messageDiv.className = "";
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `<a href="${result.fileUrl}" download="${result.filename}" id="downloadLink">ここをクリックしてダウンロード</a>`;
+
+                    const downloadLink = document.getElementById('downloadLink');
+                    downloadLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+
+                        const link = document.createElement('a');
+                        link.href = this.href;
+                        link.download = this.download;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                        this.remove();
+                        messageDiv.innerHTML = "<p>ダウンロードが完了しました。別のファイルをダウンロードできます。</p>";
+                    });
+                } else {
+                    messageDiv.innerText = `エラーが発生しました: ${result.error || '不明なエラー'}`;
+                }
+
+            } catch (error) {
+                messageDiv.className = "";
+                messageDiv.innerText = `エラーが発生しました: ${error.message}`;
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+</html>
